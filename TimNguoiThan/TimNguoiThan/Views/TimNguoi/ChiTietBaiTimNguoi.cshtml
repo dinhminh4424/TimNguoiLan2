@@ -1,0 +1,155 @@
+﻿@using Microsoft.AspNetCore.Identity
+@model TimNguoiThan.Models.TimNguoi
+@inject UserManager<ApplicationUser> UserManager
+
+@{
+    List<AnhTimNguoi> dsHinhAnh = ViewBag.DSHinhAnh;
+    AnhTimNguoi daidien = null;
+    foreach (AnhTimNguoi i in dsHinhAnh)
+    {
+        if (i.TrangThai == 1)
+        {
+            daidien = i;
+            break;
+        }
+    }
+
+    // Lấy danh sách bình luận từ ViewBag
+    List<BinhLuan> dsBinhLuan = ViewBag.DSBinhLuan;
+    var user = await UserManager.GetUserAsync(User);
+    var userId = user?.Id;
+
+}
+
+<div class="card mb-3">
+    <div class="row g-0">
+        <div class="col-md-4">
+            @if (daidien != null)
+            {
+                <img src="@daidien.HinhAnh" class="img-fluid rounded-start h-100" />
+            }
+        </div>
+        <div class="col-md-8">
+            <div class="card-body">
+                <h3 class="fw-bold">@ViewBag.NguoiTim Tìm @Model.HoTen</h3>
+                <p><span class="fw-bold">Họ và Tên:</span> @Model.HoTen</p>
+                <p><span class="fw-bold">Nhận dạng:</span> @Model.DaciemNhanDang</p>
+                @* <p><span class="fw-bold">Nội Dung:</span> @Model.MoTa</p> *@
+                <div>
+                    @Html.Raw(Model.MoTa);
+                </div>
+                <p>
+                    <span class="fw-bold">Giới Tính:</span>
+                    @if (Model.GioiTinh == 1)
+                    {
+                        <span>Nam</span>
+                    }
+                    else if (Model.GioiTinh == 2)
+                    {
+                        <span>Nữ</span>
+                    }
+                    else
+                    {
+                        <span>Khác</span>
+                    }
+                </p>
+                <p><span class="fw-bold">Khu Vực Thất Lạc:</span> @Model.KhuVuc</p>
+                <div>
+                    @foreach (TimNguoiThan.Models.AnhTimNguoi i in dsHinhAnh)
+                    {
+                        <img src="@i.HinhAnh" class="m-6 h-100" width="200" />
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Nút chuyển đổi giữa Xem Bình Luận và Bình Luận -->
+<div class="d-flex justify-content-start mb-3">
+    <button type="button" class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#modalXemBinhLuan">
+        Xem Bình Luận
+    </button>
+    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalBinhLuan">
+        Bình Luận
+    </button>
+    @if(Model.IdNguoiDung == userId)
+    {
+        <a class="btn btn-info mx-2 text-white" href="/TimNguoi/CapNhatBaiViet?id=@Model.Id">Chỉnh Sửa Bài Viết</a>
+    }
+    
+</div>
+
+<!-- Modal Xem Bình Luận -->
+<div class="modal fade" id="modalXemBinhLuan" tabindex="-1" aria-labelledby="modalXemBinhLuanLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalXemBinhLuanLabel">Bình Luận</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                @if (ViewBag.DSBinhLuan != null )
+                {
+                    foreach (var binhLuan in ViewBag.DSBinhLuan)
+                    {
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    @binhLuan.ApplicationUser.FullName
+                                    <small class="text-muted">
+                                        @binhLuan.NgayBinhLuan?.ToString("dd/MM/yyyy HH:mm")
+                                    </small>
+                                </h6>
+                                <p class="card-text">@binhLuan.NoiDung</p>
+                                @if (!string.IsNullOrEmpty(binhLuan.HinhAnh))
+                                {
+                                    <img src="@binhLuan.HinhAnh" class="img-fluid mb-2" style="max-width: 100px;" />
+                                }
+                                
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p>Chưa có bình luận nào.</p>
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Bình Luận -->
+<div class="modal fade" id="modalBinhLuan" tabindex="-1" aria-labelledby="modalBinhLuanLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalBinhLuanLabel">Viết Bình Luận</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form asp-action="ThemBinhLuan" asp-controller="TimNguoi" method="post" enctype="multipart/form-data">
+                    <input type="hidden" name="IdBaiViet" value="@Model.Id" />
+                    <input type="hidden" name="UserId" value="@userId" />
+                    <div class="form-group">
+                        <textarea name="NoiDung" class="form-control" placeholder="Nhập bình luận của bạn..." required></textarea>
+                    </div>
+                    <div class="form-group mt-2">
+                        <label for="HinhAnh">Chọn hình ảnh (nếu có):</label>
+                        <input type="file" name="HinhAnh" class="form-control" accept="image/*" />
+                    </div>
+                    <div class="form-group mt-2">
+                        <button class="btn btn-primary">Gửi Bình Luận</button>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
